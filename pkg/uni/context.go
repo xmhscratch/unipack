@@ -7,13 +7,15 @@ import (
 	"github.com/hanwen/go-fuse/v2/fs"
 )
 
+var copyBuffer []byte = make([]byte, 1024)
+
 // TarFile is a file read from a tar archive.
 type TarFile struct {
 	fs.Inode
-	// reader *tar.Reader
 
-	FilePath string
-	Header   *tar.Header
+	MountPath string
+	FilePath  string
+	Header    *tar.Header
 
 	mu   sync.Mutex
 	data []byte
@@ -26,10 +28,12 @@ var _ = (fs.NodeOpener)((*TarFile)(nil))
 // FS would also set timestamps and permissions.
 var _ = (fs.NodeGetattrer)((*TarFile)(nil))
 
-type TarRoot struct {
+type VFSRoot struct {
 	fs.Inode
-	TarPath string
+	TarFile    string
+	MainFile   string
+	MountPoint string
 }
 
 // The root populates the tree in its OnAdd method
-var _ = (fs.NodeOnAdder)((*TarRoot)(nil))
+var _ = (fs.NodeOnAdder)((*VFSRoot)(nil))

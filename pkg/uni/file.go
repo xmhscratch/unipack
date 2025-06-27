@@ -3,7 +3,7 @@ package uni
 import (
 	"io"
 	"os"
-	"time"
+	"path/filepath"
 
 	"context"
 	"syscall"
@@ -13,16 +13,17 @@ import (
 )
 
 func (f *TarFile) Getattr(ctx context.Context, fh fs.FileHandle, out *fuse.AttrOut) syscall.Errno {
-	mode := f.Mode()
-	if mode&0111 != 0 { // check if any exec bit is set
-		out.Attr.Mode = uint32(0755) | fuse.S_IFREG
-	} else {
-		out.Attr.Mode = uint32(0444) | fuse.S_IFREG
-	}
+	// mode := f.Mode()
+	// // check if any exec bit is set
+	// if mode&0111 != 0 {
+	// 	out.Attr.Mode = uint32(0755) | fuse.S_IFREG
+	// } else {
+	// 	out.Attr.Mode = uint32(0700) | fuse.S_IFREG
+	// }
 	out.Attr.Size = uint64(f.Header.Size)
 	out.Size = out.Attr.Size
 
-	out.SetTimeout(1 * time.Second)
+	// out.SetTimeout(1 * time.Second)
 	return 0
 }
 
@@ -35,7 +36,7 @@ func (f *TarFile) Open(ctx context.Context, flags uint32) (fs.FileHandle, uint32
 			file *os.File
 			err  error
 		)
-		file, err = os.Open(f.FilePath)
+		file, err = os.Open(filepath.Join(f.MountPath, f.FilePath))
 		if err != nil {
 			panic(err)
 		}
