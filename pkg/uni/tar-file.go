@@ -1,52 +1,36 @@
 package uni
 
 import (
-	"io"
-	"os"
-	"path/filepath"
-
 	"context"
+	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/hanwen/go-fuse/v2/fs"
 	"github.com/hanwen/go-fuse/v2/fuse"
 )
 
 func (f *TarFile) Getattr(ctx context.Context, fh fs.FileHandle, out *fuse.AttrOut) syscall.Errno {
-	// mode := f.Mode()
-	// // check if any exec bit is set
-	// if mode&0111 != 0 {
-	// 	out.Attr.Mode = uint32(0755) | fuse.S_IFREG
-	// } else {
-	// 	out.Attr.Mode = uint32(0700) | fuse.S_IFREG
-	// }
+	if filepath.Base(f.FilePath) == f.vfs.MainFile {
+		out.Attr.Mode = uint32(0744) | fuse.S_IFREG
+	} else {
+		out.Attr.Mode = uint32(0644) | fuse.S_IFREG
+	}
 	out.Attr.Size = uint64(f.Header.Size)
 	out.Size = out.Attr.Size
 
-	// out.SetTimeout(1 * time.Second)
+	out.SetTimeout(1 * time.Second)
 	return 0
 }
 
-// Open lazily unpacks tar data
+// Open unpacks tar
 func (f *TarFile) Open(ctx context.Context, flags uint32) (fs.FileHandle, uint32, syscall.Errno) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if f.data == nil {
-		var (
-			file *os.File
-			err  error
-		)
-		file, err = os.Open(filepath.Join(f.MountPath, f.FilePath))
-		if err != nil {
-			panic(err)
-		}
-		defer file.Close()
 
-		content, err := io.ReadAll(file)
-		if err != nil {
-			return nil, 0, syscall.EIO
-		}
-		f.data = content
+	ino := f.Inode.StableAttr().Ino
+	if f.vfs.FilesMap.Exist(ino) {
+		f.Content = f.vfs.FilesMap.Get(ino).Content
 	}
 
 	// We don't return a filehandle since we don't really need
@@ -58,8 +42,8 @@ func (f *TarFile) Open(ctx context.Context, flags uint32) (fs.FileHandle, uint32
 // Read simply returns the data that was already unpacked in the Open call
 func (f *TarFile) Read(ctx context.Context, fh fs.FileHandle, dest []byte, off int64) (fuse.ReadResult, syscall.Errno) {
 	end := int(off) + len(dest)
-	if end > len(f.data) {
-		end = len(f.data)
+	if end > len(f.Content) {
+		end = len(f.Content)
 	}
-	return fuse.ReadResultData(f.data[off:end]), fs.OK
+	return fuse.ReadResultData(f.Content[off:end]), fs.OK
 }

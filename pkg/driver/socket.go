@@ -15,7 +15,7 @@ func (ctx *SocketStdout) Send() error {
 
 func (ctx *SocketStdout) Write(p []byte) (b int, err error) {
 	if ctx.buf == nil {
-		ctx.buf = bytes.NewBuffer(make([]byte, 1024))
+		ctx.buf = bytes.NewBuffer(make([]byte, 0))
 	}
 	return ctx.buf.Write(p)
 }
