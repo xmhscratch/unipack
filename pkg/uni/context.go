@@ -36,8 +36,15 @@ type TFilesMap (map[uint64]*FileInode)
 // FilesMap is a populated files content from a tar archive.
 type FilesMap struct {
 	uint64
-	TFilesMap
+	*TFilesMap
 }
+
+type FilesMapOpener interface {
+	Load() (isNew bool, err error)
+	Save() error
+}
+
+var _ = (FilesMapOpener)((*FilesMap)(nil))
 
 // =====================================================
 type VFSRoot struct {
@@ -47,12 +54,16 @@ type VFSRoot struct {
 	TarFile    string
 	MainFile   string
 	MountPoint string
+	HashSum    string
 	FilesMap   *FilesMap
+	IsNew      bool
+
+	readyMount chan struct{}
 }
 
 type VFSRootOpener interface {
+	Init() (err error)
 	Walk(func(h *tar.Header, r *tar.Reader) error) error
-	InitFilesMap() (isCreated bool, err error)
 }
 
 // The root populates the tree in its OnAdd method

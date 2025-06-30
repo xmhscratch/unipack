@@ -10,28 +10,42 @@ import (
 	"strconv"
 )
 
-func (m *FilesMap) Exist(ino uint64) bool {
-	_, ok := m.TFilesMap[ino]
+func (m TFilesMap) Exist(ino uint64) bool {
+	_, ok := m[ino]
 	return ok
 }
 
-func (m *FilesMap) Get(ino uint64) *FileInode {
+func (m TFilesMap) Get(ino uint64) *FileInode {
 	if m.Exist(ino) {
-		return m.TFilesMap[ino]
+		return m[ino]
 	}
 	return nil
 }
 
+func (m TFilesMap) Set(ino uint64, fi *FileInode) {
+	m[ino] = fi
+}
+
+// ===============================================
+
+func (m *FilesMap) Exist(ino uint64) bool {
+	return m.TFilesMap.Exist(ino)
+}
+
+func (m *FilesMap) Get(ino uint64) *FileInode {
+	return m.TFilesMap.Get(ino)
+}
+
 func (m *FilesMap) Set(ino uint64, fi *FileInode) {
 	// fmt.Println(ino, fi.FilePath)
-	m.TFilesMap[ino] = fi
+	m.TFilesMap.Set(ino, fi)
 }
 
 func (m *FilesMap) GetSaveName() string {
 	return "unipack." + strconv.FormatUint(m.uint64, 10)
 }
 
-func (m *FilesMap) Populate() (isCreated bool, err error) {
+func (m *FilesMap) Load() (isNew bool, err error) {
 	savePath := filepath.Join(os.TempDir(), m.GetSaveName())
 
 	saveFile, err := os.OpenFile(savePath, os.O_CREATE|os.O_RDONLY, 0644)
@@ -54,17 +68,17 @@ func (m *FilesMap) Populate() (isCreated bool, err error) {
 		if err != nil {
 			panic(err)
 		}
-		// fmt.Printf("%+v\n", m)
+		// fmt.Printf("%+v\n", string(m.TFilesMap[9223372036854775808].Content))
 	} else {
-		isCreated = true
+		isNew = true
 	}
-	return isCreated, err
+	return isNew, err
 }
 
 func (m *FilesMap) Save() error {
 	savePath := filepath.Join(os.TempDir(), m.GetSaveName())
 
-	saveFile, err := os.OpenFile(savePath, os.O_TRUNC|os.O_RDWR, 0644)
+	saveFile, err := os.OpenFile(savePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -79,6 +93,11 @@ func (m *FilesMap) Save() error {
 		panic(err)
 	}
 
+	// fmt.Printf("%+v\n", string(m.TFilesMap[9223372036854775808].Content))
+
 	_, err = io.CopyBuffer(saveFile, buf, make([]byte, 1024))
 	return err
 }
+
+// map[0:0xc000078e00 9223372036854775808:0xc000078dc0]
+// map[0:0xc0005ee740 9223372036854775808:0xc0005ee700]

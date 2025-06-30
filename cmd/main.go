@@ -74,7 +74,7 @@ func main() {
 				TarFile:    tarFile,
 				MainFile:   mainFile,
 				MountPoint: mountPoint,
-			}).InstantiateServer(cleanCh)
+			}).Serve(cleanCh)
 		}
 	default:
 		os.Exit(1)
