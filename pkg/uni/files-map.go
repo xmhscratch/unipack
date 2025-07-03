@@ -37,7 +37,6 @@ func (m *FilesMap) Get(ino uint64) *FileInode {
 }
 
 func (m *FilesMap) Set(ino uint64, fi *FileInode) {
-	// fmt.Println(ino, fi.FilePath)
 	m.TFilesMap.Set(ino, fi)
 }
 

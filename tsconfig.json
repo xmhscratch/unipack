@@ -1,0 +1,74 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": "./",
+    "declaration": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "incremental": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "lib": [
+      "ES6",
+      "ES2015",
+      "ES2015.promise",
+      "ES2018.Regexp",
+      "ES7",
+      "ES2020",
+      "ES2022",
+      "ES2022.RegExp",
+      "DOM",
+      "DOM.iterable",
+      "ESNEXT"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "outDir": "./dist/front",
+    "paths": {
+      "@@/*": [
+        "./front/*"
+      ],
+      "@/*": [
+        "./app/*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "ES2022",
+    "typeRoots": [
+      "./node_modules/@types",
+      "./front/types"
+    ],
+    "types": [
+      "node",
+      "react",
+      "lodash-es",
+      "jest"
+    ],
+    "useDefineForClassFields": false
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "app/**/*.d.ts",
+    "front/**/*.d.ts"
+  ]
+}

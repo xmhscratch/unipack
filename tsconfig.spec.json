@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/front/spec",
+    "types": [
+      "jest"
+    ]
+  },
+  "extends": "./tsconfig.json",
+  "include": [
+    "front/**/*.spec.ts",
+    "front/**/*.d.ts",
+    "front/*.d.ts"
+  ]
+}
