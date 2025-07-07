@@ -1,0 +1,48 @@
+[package]
+name = "viewer"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+chrono = { version = "0.4.41", features = ["wasmbind"] }
+clap = { version = "4.5.40", features = ["derive"] }
+fancy-regex = "0.14.0"
+gloo = "0.11.0"
+js-sys = "0.3.77"
+mini-moka = "0.10.3"
+once_cell = "1.21.3"
+rand = "0.8.5"
+wasm-bindgen = "0.2.100"
+wasm-bindgen-futures = "0.4"
+yew = { version = "0.21.0", features = ["csr"] }
+
+[dependencies.web-sys]
+version = "0.3.77"
+features = [
+    "BinaryType",
+    "Blob",
+    "Document",
+    "Element",
+    "ErrorEvent",
+    "FileReader",
+    "HtmlHeadElement",
+    "MessageEvent",
+    "Node",
+    "ProgressEvent",
+    "ShadowRoot",
+    "ShadowRootInit",
+    "ShadowRootMode",
+    "WebSocket",
+]
+
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="js"']
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O4", "--enable-mutable-globals"]
+
+[lints]
+workspace = true

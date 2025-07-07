@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = [ "viewer" ]
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [ ] }
+
+[profile.release]
+lto = true
+strip = "debuginfo"
+opt-level = 3

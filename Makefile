@@ -5,9 +5,25 @@ FIXTURE_DIR=fixture
 DIST_DIR=dist
 TESTAPP_DIR=test-app
 
-clean_lorem:
-	rm -rf $(DIST_DIR)/*;
-.PHONY: clean_lorem
+DBUILD_CMD = buildx build
+DBUILD_ARGS = --progress=plain
+DBUILD_REPO = localhost:5000
+DBUILD_VERS = latest
+
+DOCK_ROOT_CTX = ./
+
+# BINARY = $(DIST_DIR)/
+
+# $(BINARY):
+
+ifdef
+endif
+
+wasm_viewer: clean_docker clean_build
+	rm -rf $(DIST_DIR)/viewer/*
+	mkdir -pv $(DIST_DIR)/viewer/
+	docker $(DBUILD_CMD) $(DBUILD_ARGS) --file=./viewer.Dockerfile --target=export-viewer --output type=local,dest=$(DIST_DIR)/viewer/ $(DOCK_ROOT_CTX)
+.PHONY: wasm_viewer
 
 build_lorem:
 	if [[ ! -d $(DIST_DIR)/lorem ]]; then \
@@ -27,3 +43,19 @@ pack_lorem: build_lorem
 gorun_lorem: pack_lorem
 	go run $(CMD_DIR)/main.go run --main-file=lorem.bin -- $(DIST_DIR)/lorem.tar.gz
 .PHONY: gorun_lorem
+
+clean_docker:
+	echo -e 'y' | docker system prune
+.PHONY: clean_docker
+
+clean_build:
+	rm -rf $(DIST_DIR)/*
+	mkdir -pv $(DIST_DIR)
+.PHONY: clean_build
+
+clean_lorem:
+	rm -rf $(DIST_DIR)/*;
+.PHONY: clean_lorem
+
+clean: clean_build clean_docker clean_lorem
+.PHONY: clean
