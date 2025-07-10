@@ -2,8 +2,10 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, ShadowRootInit, ShadowRootMode};
 use yew::{create_portal, html, Component, Context, Html, NodeRef, Properties};
-use mini_moka::sync::Cache;
-// use chrono::Duration;
+use mini_moka::unsync::Cache;
+use chrono::{DateTime, Utc, Duration};
+use md5::{Md5, Digest};
+use crypto_common::{Output};
 use crate::wsclient::start_socket;
 
 #[derive(Properties, PartialEq)]
@@ -66,22 +68,39 @@ impl Component for ShadowDOMHost {
     }
 }
 
-pub type MyKey = String;
-pub type MyValue = u32;
+#[derive(Debug)]
+#[derive(Eq, Hash, PartialEq)]
+pub struct MsgKey(String, i64);
 
-pub struct TermView<MyKey, MyValue> {
-    root_el: Element,
-    messages: Vec<String>,
-    cache: Cache<MyKey, MyValue>,
-}
+#[derive(Debug)]
+#[derive(Eq, PartialEq, Clone)]
+pub struct MsgValue(String);
 
-pub enum TermMessage {
+pub enum MessageBoard {
     Append,
 }
 
+impl MsgKey {
+    pub(crate) fn hash(&self) -> Output<Md5> {
+        let mut hasher = Md5::new();
+        hasher.update(self.0.as_bytes());
+        hasher.update(&self.1.to_le_bytes());
+        hasher.finalize()
+    }
+
+    pub(crate) fn to_string(&self) -> String {
+        base16ct::lower::encode_string(&self.hash())
+    }
+}
+
+pub struct TermView<MsgKey, MsgValue> {
+    root_el: Element,
+    messages: Cache<MsgKey, MsgValue>,
+}
+
 #[cfg(target_arch = "wasm32")]
-impl Component for TermView<MyKey, MyValue> {
-    type Message = TermMessage;
+impl Component for TermView<MsgKey, MsgValue> {
+    type Message = MessageBoard;
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
@@ -92,18 +111,12 @@ impl Component for TermView<MyKey, MyValue> {
         let _ = root_el.set_id("root");
         let _ = body.append_child(&root_el);
 
-        let cache = Cache::builder()
-            // Time to live (TTL): 30 minutes
-            // .time_to_live(Duration::milliseconds(2 * 60).to_std().expect("REASON"))
-            // Time to idle (TTI):  5 minutes
-            // .time_to_idle(Duration::milliseconds(1 * 60).to_std().expect("REASON"))
-            // Create the cache.
-            .build();
-
         Self {
             root_el,
-            cache,
-            messages: Vec::new(),
+            messages: Cache::builder()
+                .time_to_live(Duration::seconds(60))
+                .time_to_idle(Duration::seconds(30))
+                .build(),
         }
     }
 
@@ -112,32 +125,45 @@ impl Component for TermView<MyKey, MyValue> {
         let utf8_string = String::from_utf8(bytes)
             .map_err(|non_utf8| String::from_utf8_lossy(non_utf8.as_bytes()).into_owned())
             .unwrap();
+
+        let dt: DateTime<Utc> = Utc::now();
+
         match msg {
-            TermMessage::Append => {
-                self.cache.insert(utf8_string.to_string(), 4);
-                self.messages.push(utf8_string)
+            MessageBoard::Append => {
+                self.messages.insert(
+                    MsgKey("asdasd".to_string(), dt.timestamp()),
+                    MsgValue(utf8_string.to_string()),
+                )
             },
         }
         true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let onclick = ctx.link().callback(|_| TermMessage::Append);
+        let onclick = ctx.link().callback(|_| MessageBoard::Append);
         let content = create_portal(
             html! {
-                {format!("{}", self.messages.join("\n"))}
+                {
+                    for self.messages.iter().map(|(k, v)|
+                        html! {
+                            <div class="card w-50 card_style">
+                                <div class="card-body">
+                                    <p class="card-text">{format!("{:#?} / {:#?}", k.to_string(), v)}</p>
+                                </div>
+                            </div>
+                        }
+                    )
+                }
             },
             self.root_el.clone(),
         );
         html! {
-            <>
             <div>
                 <pre>{content}</pre>
                 <ShadowDOMHost>
                     <button {onclick}>{"Click me!"}</button>
                 </ShadowDOMHost>
             </div>
-            </>
         }
     }
 }
@@ -150,27 +176,12 @@ impl Component for TermView<MyKey, MyValue> {
 
 #[wasm_bindgen(start)]
 fn run() -> Result<(), JsValue> {
-    // let cache = Cache::builder().expire_after(expiry).build();
+    let _ = yew::Renderer::<TermView<MsgKey, MsgValue>>::new().render();
 
-    // const NUM_KEYS: usize = 10;
-
-    // // Insert some key-value pairs.
-    // for key in 0..NUM_KEYS {
-    //     cache.insert(key, format!("value-{key}"));
-    // }
-
-    // // Get all entries.
-    // for key in 0..NUM_KEYS {
-    //     assert_eq!(cache.get(&key), Some(format!("value-{key}")));
-    // }
-
-    // // Update all entries.
-    // for key in 0..NUM_KEYS {
-    //     cache.insert(key, format!("new-value-{key}"));
-    // }
-
-    yew::Renderer::<TermView<MyKey, MyValue>>::new().render();
-    Ok(start_socket()?)
+    match start_socket() {
+        Ok(sock) => Ok(sock),
+        Err(e) => return Err(e),
+    }
 }
 
 // let window = web_sys::window().expect("no global `window` exists");
