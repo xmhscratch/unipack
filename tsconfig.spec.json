@@ -7,8 +7,8 @@
   },
   "extends": "./tsconfig.json",
   "include": [
-    "front/**/*.spec.ts",
-    "front/**/*.d.ts",
-    "front/*.d.ts"
+    "pkg/front/**/*.spec.ts",
+    "pkg/front/**/*.d.ts",
+    "pkg/front/*.d.ts"
   ]
 }

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "viewer" ]
+members = [ "pkg/viewer", "pkg/fbgen-rust" ]
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [ ] }

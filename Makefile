@@ -1,8 +1,10 @@
 .PHONY: FORCE
 
+ROOT_DIR=./
 CMD_DIR=cmd
 FIXTURE_DIR=fixture
 DIST_DIR=dist
+PKG_DIR=pkg
 TESTAPP_DIR=test-app
 
 DBUILD_CMD = buildx build
@@ -10,7 +12,7 @@ DBUILD_ARGS = --progress=plain
 DBUILD_REPO = localhost:5000
 DBUILD_VERS = latest
 
-DOCK_ROOT_CTX = ./
+DOCK_ROOT_CTX = $(ROOT_DIR)
 
 # BINARY = $(DIST_DIR)/
 
@@ -18,6 +20,10 @@ DOCK_ROOT_CTX = ./
 
 ifdef
 endif
+
+fbgen_schema:
+	docker $(DBUILD_CMD) $(DBUILD_ARGS) --file=./flatbuffer.Dockerfile --target=export-gen --output type=local,dest=$(PKG_DIR) $(DOCK_ROOT_CTX)
+.PHONY: fbgen_schema
 
 wasm_viewer: clean_docker clean_build
 	rm -rf $(DIST_DIR)/viewer/*
@@ -38,11 +44,17 @@ pack_lorem: build_lorem
 	if [[ ! -f $(DIST_DIR)/lorem.tar.gz ]]; then \
 		tar -C $(DIST_DIR)/lorem -c fixture lorem.bin | gzip -9n > $(DIST_DIR)/lorem.tar.gz; \
 	fi;
-.PHONY: pack_lorem
+# .PHONY: pack_lorem
 
 gorun_lorem: pack_lorem
 	go run $(CMD_DIR)/main.go run --main-file=lorem.bin -- $(DIST_DIR)/lorem.tar.gz
-.PHONY: gorun_lorem
+# .PHONY: gorun_lorem
+
+go.mod:
+	go mod tidy;
+
+go.sum:
+	go mod vendor;
 
 clean_docker:
 	echo -e 'y' | docker system prune

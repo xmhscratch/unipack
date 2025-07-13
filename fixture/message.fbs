@@ -1,0 +1,10 @@
+// message.fbs
+namespace websock;
+
+table Message {
+  event:int16;
+  timestamp:int64;
+  message:uint8;
+}
+
+root_type Message;

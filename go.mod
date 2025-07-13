@@ -1,4 +1,4 @@
-module xmhscratch/unipack
+module unipack
 
 go 1.23.9
 
@@ -7,6 +7,7 @@ require (
 	github.com/gofiber/contrib/websocket v1.3.4
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
+	github.com/google/flatbuffers v25.2.10+incompatible
 	github.com/hanwen/go-fuse/v2 v2.8.0
 )
 
