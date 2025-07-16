@@ -18,10 +18,11 @@ RUN \
     rustup target add wasm32-unknown-unknown; \
     cargo install --path .; \
     trunk build \
-        --config=/export/viewer/Trunk.toml \
+        --config=/export/pkg/viewer/Trunk.toml \
         --dist=/export/dist/viewer/ \
+        --public-url=/viewer/ \
         --cargo-profile=$(if [ ! -z "$DEV" ] && [ "$DEV" -ne 0 ]; then echo "release"; else echo "dev"; fi) \
-        /export/viewer/index.html;
+        /export/pkg/viewer/index.html;
 
 FROM scratch AS export-viewer
 COPY --from=build-viewer /export/dist/viewer/ /

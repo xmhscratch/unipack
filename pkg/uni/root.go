@@ -172,8 +172,11 @@ func (vfs *VFSRoot) Walk(walkFn func(*tar.Header, *tar.Reader) error) (err error
 	return err
 }
 
-func (vfs *VFSRoot) Serve(cleanCh chan struct{}) {
-	var c chan os.Signal = make(chan os.Signal, 1)
+func (vfs *VFSRoot) Serve() os.Signal {
+	var (
+		c   chan os.Signal = make(chan os.Signal, 1)
+		ret chan os.Signal = make(chan os.Signal)
+	)
 
 	go func() {
 		signal.Notify(c, os.Interrupt)
@@ -213,11 +216,11 @@ func (vfs *VFSRoot) Serve(cleanCh chan struct{}) {
 				isMounted = true
 				go srv.Wait()
 				go vfs.ExecBin(c, errCh)
-			case <-time.After(30 * time.Second):
-				c <- syscall.SIGCHLD
+			// case <-time.After(30 * time.Second):
+			// 	c <- syscall.SIGCHLD
 			case err := <-errCh:
 				fmt.Println(err)
-				c <- syscall.SIGHUP
+				// c <- syscall.SIGHUP
 			case sig := <-c:
 				if isMounted {
 					if err := srv.Unmount(); err != nil {
@@ -227,7 +230,8 @@ func (vfs *VFSRoot) Serve(cleanCh chan struct{}) {
 						panic(err)
 					}
 				}
-				cleanCh <- struct{}{}
+
+				ret <- sig
 
 				fmt.Println("exit signal: " + sig.String())
 				switch sig {
@@ -245,6 +249,8 @@ func (vfs *VFSRoot) Serve(cleanCh chan struct{}) {
 			}
 		}
 	}()
+
+	return <-ret
 }
 
 func (vfs *VFSRoot) ExecBin(sigCh chan os.Signal, errCh chan error) {
@@ -286,7 +292,10 @@ func (vfs *VFSRoot) ExecBin(sigCh chan os.Signal, errCh chan error) {
 	}
 	defer stderr.Close()
 
-	out := &driver.SocketStdout{}
+	out, err := driver.NewSocketStdout()
+	if err != nil {
+		cancel(err)
+	}
 	defer out.Close()
 
 	if err := cmd.Start(); err != nil {

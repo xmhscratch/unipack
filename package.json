@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "viewer:start": "echo 'trunk serve --config=./pkg/viewer/Trunk.toml --address=0.0.0.0 --port=3113 ./index.html' | sh $@",
-    "viewer:build": "echo 'trunk build --config=./pkg/viewer/Trunk.toml --dist=./dist/viewer/ --cargo-profile=dev ./index.html' | sh $@",
+    "viewer:build": "echo 'trunk build --config=./pkg/viewer/Trunk.toml --dist=./dist/viewer/ --public-url=./viewer --cargo-profile=dev ./index.html' | sh $@",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "xmhscratch",

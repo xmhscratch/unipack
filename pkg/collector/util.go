@@ -16,27 +16,24 @@ func ParseHostPort(address string) (string, string, error) {
 	return host, port, err
 }
 
-func WaitTermination() {
-	exit := make(chan struct{})
-	SignalC := make(chan os.Signal, 4)
+func WaitTermination() chan os.Signal {
+	var c chan os.Signal = make(chan os.Signal, 4)
 
 	signal.Notify(
-		SignalC,
+		c,
 		syscall.SIGHUP,
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 	)
 	go func() {
-		for s := range SignalC {
+		for s := range c {
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-				close(exit)
 				return
 			}
 		}
 	}()
 
-	<-exit
-	os.Exit(0)
+	return c
 }

@@ -2,9 +2,10 @@
 namespace websock;
 
 table Message {
-  event:int16;
-  timestamp:int64;
-  message:uint8;
+  event:int16(id:0);
+  namespace:string(id:1);
+  timestamp:int64(id:2);
+  message:[ubyte](id:3);
 }
 
 root_type Message;

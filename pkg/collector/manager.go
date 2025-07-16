@@ -3,18 +3,31 @@ package collector
 import (
 	"sync"
 
+	badger "github.com/dgraph-io/badger/v4"
 	"github.com/golang/groupcache/lru"
 )
 
 var socketManager *lru.Cache
 
-func NewSocketConnection(sessionId string) *sync.Pool {
-	var sockUUID string = GenerateV5(sessionId, "fileKey", UUIDNamespace)
+func NewSocketConnection(namespace string) *sync.Pool {
+	var sockUUID string = GenerateV5(namespace, UUIDNamespace, UUIDNamespace)
 	ctx := &sync.Pool{
 		New: func() interface{} {
+			var (
+				err  error
+				db   *badger.DB
+				opts badger.Options = badger.DefaultOptions(STD_OUTPUT_PATH)
+			)
+
+			db, err = badger.Open(opts)
+			if err != nil {
+				return err
+			}
+
 			return &SocketConnection{
 				UUID:      sockUUID,
-				SessionId: sessionId,
+				Namespace: namespace,
+				Db:        db,
 			}
 		},
 	}
@@ -22,13 +35,8 @@ func NewSocketConnection(sessionId string) *sync.Pool {
 	if socketManager == nil {
 		socketManager = lru.New(10)
 		socketManager.OnEvicted = func(key lru.Key, value interface{}) {
-			// sockUUID := key.(string)
 			sock := (value.(*sync.Pool)).Get().(*SocketConnection)
-			// // fmt.Println(sockUUID, sock)
-			// if err := sock.Subscriber.Unsubscribe(context.TODO(), fileKey); err != nil {
-			// }
-			// if err := sock.Subscriber.Close(); err != nil {
-			// }
+			defer sock.Db.Close()
 			(value.(*sync.Pool)).Put(sock)
 		}
 	}

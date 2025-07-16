@@ -1,10 +1,9 @@
-package main
+package collector
 
 import (
 	"encoding/json"
 	"fmt"
 	"time"
-	"unipack/pkg/collector"
 
 	"github.com/gofiber/contrib/socketio"
 	"github.com/gofiber/contrib/websocket"
@@ -15,17 +14,17 @@ func NewSocketRoute(app *fiber.App) func(*socketio.Websocket) {
 	return func(kws *socketio.Websocket) {
 		var (
 			err       error
-			sessionId string = kws.Params("sessionId")
+			namespace string = kws.Params("namespace")
 		)
 
-		kws.SetAttribute("session_id", sessionId)
+		kws.SetAttribute("namespace", namespace)
 
-		soc := collector.NewSocketConnection(sessionId)
-		kws.UUID = soc.Get().(*collector.SocketConnection).UUID
+		soc := NewSocketConnection(namespace)
+		kws.UUID = soc.Get().(*SocketConnection).UUID
 
 	checkNewMessage:
 		for range time.Tick(time.Duration(10) * time.Millisecond) {
-			var msgChan chan *collector.SocketMessage = make(chan *collector.SocketMessage)
+			var msgChan chan *TSocketMessage = make(chan *TSocketMessage)
 			defer close(msgChan)
 
 			go func() {
@@ -37,21 +36,21 @@ func NewSocketRoute(app *fiber.App) func(*socketio.Websocket) {
 				if tp, pl, err = kws.Conn.ReadMessage(); err != nil {
 					// kws.Fire(socketio.EventError, []byte(err.Error()))
 					fmt.Println(err.Error())
-					// msgChan <- nil
+					msgChan <- nil
 					return
 				}
 
 				if tp != 1 {
-					// msgChan <- nil
+					msgChan <- nil
 					return
 				}
 
 				{
-					var msg *collector.SocketMessage
+					var msg *TSocketMessage
 					if err = json.Unmarshal(pl, &msg); err != nil {
 						// kws.Fire(socketio.EventError, []byte{})
 						fmt.Println(err.Error())
-						// msgChan <- nil
+						msgChan <- nil
 						return
 					}
 					msgChan <- msg
@@ -62,7 +61,7 @@ func NewSocketRoute(app *fiber.App) func(*socketio.Websocket) {
 			select {
 			case msg := <-msgChan:
 				if msg == nil {
-					msg = &collector.SocketMessage{
+					msg = &TSocketMessage{
 						Event: websocket.CloseMessage,
 					}
 				}
@@ -86,7 +85,7 @@ func NewSocketRoute(app *fiber.App) func(*socketio.Websocket) {
 				}
 
 				break readMsg
-			case <-time.After(collector.TIMEOUT_READ_MESSAGE):
+			case <-time.After(TIMEOUT_READ_MESSAGE):
 				fmt.Println("read message timeout")
 				break readMsg
 			}
