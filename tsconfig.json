@@ -29,10 +29,10 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
-    "outDir": "./dist/front",
+    "outDir": "./dist/frontend",
     "paths": {
       "@@/*": [
-        "./pkg/front/*"
+        "./pkg/frontend/*"
       ],
       "@/*": [
         "./app/*"
@@ -50,7 +50,7 @@
     "target": "ES2022",
     "typeRoots": [
       "./node_modules/@types",
-      "./pkg/front/types"
+      "./pkg/frontend/types"
     ],
     "types": [
       "node",
@@ -69,6 +69,6 @@
     "**/*.ts",
     "**/*.tsx",
     "app/**/*.d.ts",
-    "pkg/front/**/*.d.ts"
+    "pkg/frontend/**/*.d.ts"
   ]
 }

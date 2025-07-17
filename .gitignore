@@ -48,7 +48,7 @@ node_modules
 # next.js
 /.next/
 /out/
-/pkg/front/components/ui
+/pkg/frontend/components/ui
 
 # production
 /build

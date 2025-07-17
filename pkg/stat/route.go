@@ -1,4 +1,4 @@
-package collector
+package stat
 
 import (
 	"encoding/json"

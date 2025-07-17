@@ -1,11 +1,14 @@
-package collector
+package stat
 
 import (
+	"fmt"
+
 	"github.com/gofiber/contrib/socketio"
 	"github.com/gofiber/fiber/v2"
 )
 
-func HandleDisconnect(app *fiber.App) func(*socketio.EventPayload) {
+func HandleError(app *fiber.App) func(*socketio.EventPayload) {
 	return func(ep *socketio.EventPayload) {
+		fmt.Println(ep.Error)
 	}
 }

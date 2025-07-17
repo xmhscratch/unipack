@@ -1,4 +1,4 @@
-package collector
+package stat
 
 import (
 	"fmt"
@@ -7,8 +7,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func HandleError(app *fiber.App) func(*socketio.EventPayload) {
+func HandleClose(app *fiber.App) func(*socketio.EventPayload) {
 	return func(ep *socketio.EventPayload) {
+		socketManager.Remove(ep.Kws.UUID)
+		ep.Kws.Conn.Close()
 		fmt.Println(ep.Error)
 	}
 }

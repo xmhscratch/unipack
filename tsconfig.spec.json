@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/front/spec",
+    "outDir": "./dist/frontend/spec",
     "types": [
       "jest"
     ]
   },
   "extends": "./tsconfig.json",
   "include": [
-    "pkg/front/**/*.spec.ts",
-    "pkg/front/**/*.d.ts",
-    "pkg/front/*.d.ts"
+    "pkg/frontend/**/*.spec.ts",
+    "pkg/frontend/**/*.d.ts",
+    "pkg/frontend/*.d.ts"
   ]
 }

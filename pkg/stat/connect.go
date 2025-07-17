@@ -1,4 +1,4 @@
-package collector
+package stat
 
 import (
 	"github.com/gofiber/contrib/socketio"

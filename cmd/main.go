@@ -7,16 +7,14 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"unipack/pkg/stat"
 	"unipack/pkg/uni"
 
 	"github.com/gofiber/contrib/socketio"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-
 	// "github.com/gofiber/fiber/v2/middleware/filesystem"
-
-	"unipack/pkg/collector"
 )
 
 func main() {
@@ -75,13 +73,13 @@ func StartServer() chan os.Signal {
 
 	app.Use(cors.New())
 
-	// socketio.On(socketio.EventConnect, collector.HandleConnect(app))
-	// socketio.On(socketio.EventDisconnect, collector.HandleDisconnect(app))
-	socketio.On(socketio.EventClose, collector.HandleClose(app))
-	// socketio.On(socketio.EventError, collector.HandleError(app))
-	socketio.On(socketio.EventPing, collector.HandlePing(app))
+	// socketio.On(socketio.EventConnect, stat.HandleConnect(app))
+	// socketio.On(socketio.EventDisconnect, stat.HandleDisconnect(app))
+	socketio.On(socketio.EventClose, stat.HandleClose(app))
+	// socketio.On(socketio.EventError, stat.HandleError(app))
+	socketio.On(socketio.EventPing, stat.HandlePing(app))
 
-	app.Use("/viewer", collector.NewStorageHandler("/home/web/repos/unipack/dist/viewer", collector.StorageConfig{
+	app.Use("/viewer", stat.NewStorageHandler("/home/web/repos/unipack/dist/viewer", stat.StorageConfig{
 		Compress:      false,
 		ByteRange:     true,
 		Browse:        false,
@@ -96,7 +94,7 @@ func StartServer() chan os.Signal {
 		}
 		return fiber.ErrUpgradeRequired
 	})
-	app.Get("/ws/:namespace", socketio.New(collector.NewSocketRoute(app)))
+	app.Get("/ws/:namespace", socketio.New(stat.NewSocketRoute(app)))
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
 	})
@@ -105,11 +103,11 @@ func StartServer() chan os.Signal {
 		return c.SendString("page not found!")
 	})
 
-	_, port, err := collector.ParseHostPort("")
+	_, port, err := stat.ParseHostPort("")
 	if err != nil {
 		panic(err)
 	}
 	go app.Listen(net.JoinHostPort("0.0.0.0", port))
 
-	return collector.WaitTermination()
+	return stat.WaitTermination()
 }
