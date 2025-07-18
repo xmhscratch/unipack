@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"time"
-
-	badger "github.com/dgraph-io/badger/v4"
 )
 
+const UNIX_SOCKET_PATH = "/run/unipack.sock"
 const STD_OUTPUT_PATH = "/var/log/unipack"
 
 type IDriverRW interface {
@@ -19,7 +18,7 @@ type IDriverRW interface {
 type DriverStdout struct {
 	IDriverRW
 	buf      *bytes.Buffer
-	Messages *MsgBufStack
+	Messages *MessageBufferStack
 }
 
 type EDriverErrCode (int)
@@ -43,18 +42,36 @@ type DriverStderr struct {
 
 type SocketStdout struct {
 	DriverStdout
-	db        *badger.DB
-	dbOpts    badger.Options
 	idleSince time.Time
 }
 
-type IMsgItem interface {
+type TSocketMessageEvent (int16)
+
+// Source @url:https://github.com/gorilla/websocket/blob/master/conn.go#L61
+// The message types are defined in RFC 6455, section 11.8.
+const (
+	_                        TSocketMessageEvent = iota
+	SocketTextMessageEvent   TSocketMessageEvent = 1
+	SocketBinaryMessageEvent TSocketMessageEvent = 2
+	SocketCloseMessageEvent  TSocketMessageEvent = 8
+	SocketPingMessageEvent   TSocketMessageEvent = 9
+	SocketPongMessageEvent   TSocketMessageEvent = 10
+)
+
+type TMessage struct {
+	Event     TSocketMessageEvent
+	Namespace string
+	Timestamp int64
+	Message   []uint8
+}
+
+type IMessageItem interface {
 	Index() int64
 }
 
-type MsgItem struct {
-	IMsgItem
+type MessageItem struct {
+	IMessageItem
 	Value json.RawMessage
 }
 
-type MsgBufStack ([]*MsgItem)
+type MessageBufferStack ([]*MessageItem)

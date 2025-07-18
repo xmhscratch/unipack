@@ -1,8 +1,9 @@
 use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
+use chrono::{Utc};
 
-// use flatbuffers::FlatBufferBuilder;
+use flatbuffers::FlatBufferBuilder;
 use fbgen::schema::websock::{Message, MessageArgs, finish_message_buffer, root_as_message};
 
 macro_rules! console_log {
@@ -10,7 +11,7 @@ macro_rules! console_log {
 }
 
 static WS_HOST: Lazy<String> = Lazy::new(|| {
-    "ws://192.168.56.55:3113/".to_string()
+    "ws://192.168.56.55:3113/ws/default".to_string()
 });
 
 #[wasm_bindgen]
@@ -36,18 +37,6 @@ pub fn start_socket() -> Result<(), JsValue> {
 
             let bytes: Vec<u8> = array.to_vec();
             read_message(&bytes[..]);
-            // // make_message(&mut bldr, &mut bytes, "Arthur Dent", 42);
-            // let (name, id) = read_message(&bytes[..]);
-
-            // println!("{} has id {}. The encoded data is {} bytes long.", name, id, bytes.len());
-
-            // here you can for example use Serde Deserialize decode the message
-            // for demo purposes we switch back to Blob-type and send off another binary message
-            // cloned_ws.set_binary_type(web_sys::BinaryType::Blob);
-            // match cloned_ws.send_with_u8_array(&[5, 6, 7, 8]) {
-            //     Ok(_) => console_log!("binary message successfully sent"),
-            //     Err(err) => console_log!("error sending message: {:?}", err),
-            // }
         }
     });
     // set message event handler on WebSocket
@@ -63,14 +52,23 @@ pub fn start_socket() -> Result<(), JsValue> {
 
     let cloned_ws = ws.clone();
     let onopen_callback = Closure::<dyn FnMut()>::new(move || {
-        console_log!("socket opened");
-        match cloned_ws.send_with_str("ping") {
-            Ok(_) => console_log!("message successfully sent"),
-            Err(err) => console_log!("error sending message: {:?}", err),
-        }
-        // send off binary message
-        match cloned_ws.send_with_u8_array(&[0, 1, 2, 3]) {
-            Ok(_) => console_log!("binary message successfully sent"),
+        let mut bldr = FlatBufferBuilder::new();
+        let mut bytes: Vec<u8> = Vec::new();
+
+        // send ping
+        let args = MessageArgs{
+            event: 9,
+            namespace: Some(bldr.create_string("default")),
+            timestamp: Utc::now().timestamp(),
+            message: None,
+        };
+        let end_offset = Message::create(&mut bldr, &args);
+        finish_message_buffer(&mut bldr, end_offset);
+        let finished_data = bldr.finished_data();
+        bytes.extend_from_slice(finished_data);
+
+        match cloned_ws.send_with_u8_array(&bytes[..]) {
+            Ok(_) => console_log!("binary message successfully sent: {:?}", &bytes[..]),
             Err(err) => console_log!("error sending message: {:?}", err),
         }
     });

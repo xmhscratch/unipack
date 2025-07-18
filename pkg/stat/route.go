@@ -1,13 +1,14 @@
 package stat
 
 import (
-	"encoding/json"
-	"fmt"
 	"time"
+	"unipack/pkg/driver"
 
 	"github.com/gofiber/contrib/socketio"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang/groupcache/lru"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 func NewSocketRoute(app *fiber.App) func(*socketio.Websocket) {
@@ -15,17 +16,26 @@ func NewSocketRoute(app *fiber.App) func(*socketio.Websocket) {
 		var (
 			err       error
 			namespace string = kws.Params("namespace")
+			conn      *SocketConnection
 		)
 
 		kws.SetAttribute("namespace", namespace)
 
-		soc := NewSocketConnection(namespace)
-		kws.UUID = soc.Get().(*SocketConnection).UUID
+		connPool := socketPool.Get().(*lru.Cache)
+		if _, ok := connPool.Get(namespace); !ok {
+			conn = &SocketConnection{Namespace: namespace}
+			connPool.Add(namespace, conn)
+
+			socketPool.Put(connPool)
+		}
+
+		checkInterval := time.NewTicker(5 * time.Millisecond)
+		defer checkInterval.Stop()
 
 	checkNewMessage:
-		for range time.Tick(time.Duration(10) * time.Millisecond) {
-			var msgChan chan *TSocketMessage = make(chan *TSocketMessage)
-			defer close(msgChan)
+		for range checkInterval.C {
+			var msg chan *driver.TMessage = make(chan *driver.TMessage)
+			defer close(msg)
 
 			go func() {
 				var (
@@ -34,60 +44,36 @@ func NewSocketRoute(app *fiber.App) func(*socketio.Websocket) {
 				)
 
 				if tp, pl, err = kws.Conn.ReadMessage(); err != nil {
-					// kws.Fire(socketio.EventError, []byte(err.Error()))
-					fmt.Println(err.Error())
-					msgChan <- nil
+					kws.Fire(socketio.EventError, []byte(err.Error()))
 					return
 				}
 
-				if tp != 1 {
-					msgChan <- nil
+				if tp < 1 || tp > 2 {
 					return
 				}
-
-				{
-					var msg *TSocketMessage
-					if err = json.Unmarshal(pl, &msg); err != nil {
-						// kws.Fire(socketio.EventError, []byte{})
-						fmt.Println(err.Error())
-						msgChan <- nil
-						return
-					}
-					msgChan <- msg
-				}
+				msg <- driver.ReadMessage(pl, flatbuffers.UOffsetT(0), false)
 			}()
 
-		readMsg:
-			select {
-			case msg := <-msgChan:
-				if msg == nil {
-					msg = &TSocketMessage{
-						Event: websocket.CloseMessage,
-					}
-				}
-
-				switch msg.Event {
-				case websocket.PingMessage:
-					kws.Fire(socketio.EventPing, []byte{})
-				case websocket.TextMessage:
-					kws.Fire(socketio.EventMessage, []byte{})
-				case websocket.CloseMessage:
-					kws.Fire(socketio.EventClose, []byte{})
-					break checkNewMessage
-				// kws.Fire(socketio.EventPing, []byte{})
-				// case websocket.BinaryMessage:
-				// 	if err := kws.Conn.WriteJSON(string(p)); err != nil {
-				// 		kws.Fire(socketio.EventError, []byte(err.Error()))
-				// 	}
-				default:
-					kws.Fire(socketio.EventClose, []byte{})
-					break checkNewMessage
-				}
-
-				break readMsg
-			case <-time.After(TIMEOUT_READ_MESSAGE):
-				fmt.Println("read message timeout")
-				break readMsg
+			switch (<-msg).Event {
+			case websocket.PingMessage:
+				println("ping")
+				kws.Fire(socketio.EventPing, []byte{})
+			case websocket.TextMessage:
+				println("text")
+				kws.Fire(socketio.EventMessage, []byte{})
+			case websocket.BinaryMessage:
+				println("binary")
+				kws.Fire(socketio.EventMessage, []byte{})
+				// if err := kws.Conn.WriteJSON(string(p)); err != nil {
+				// 	kws.Fire(socketio.EventError, []byte(err.Error()))
+				// }
+			case websocket.CloseMessage:
+				kws.Fire(socketio.EventClose, []byte{})
+				break checkNewMessage
+			// kws.Fire(socketio.EventPing, []byte{})
+			default:
+				kws.Fire(socketio.EventClose, []byte{})
+				break checkNewMessage
 			}
 		}
 	}

@@ -4,39 +4,15 @@ import (
 	"io/fs"
 	"time"
 
-	badger "github.com/dgraph-io/badger/v4"
 	"github.com/gofiber/fiber/v2"
 )
 
+const UNIX_SOCKET_PATH = "/run/unipack.sock"
 const STD_OUTPUT_PATH = "/var/log/unipack"
 const TIMEOUT_READ_MESSAGE = time.Second * 30
-const UUIDFormat = "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x"
-const UUIDNamespace = "6ba7b8109dad11d180b400c02fd430c8"
 
 type SocketConnection struct {
-	UUID      string
 	Namespace string
-	Db        *badger.DB
-}
-
-type TSocketEvent (int16)
-
-// Source @url:https://github.com/gorilla/websocket/blob/master/conn.go#L61
-// The message types are defined in RFC 6455, section 11.8.
-const (
-	_                        TSocketEvent = iota
-	SocketTextMessageEvent   TSocketEvent = 1
-	SocketBinaryMessageEvent TSocketEvent = 2
-	SocketCloseMessageEvent  TSocketEvent = 8
-	SocketPingMessageEvent   TSocketEvent = 9
-	SocketPongMessageEvent   TSocketEvent = 10
-)
-
-type TSocketMessage struct {
-	Event     TSocketEvent `json:"event"`
-	Namespace string       `json:"namespace"`
-	Timestamp int64        `json:"timestamp"`
-	Message   []uint8      `json:"message"`
 }
 
 // Config defines the config for middleware.

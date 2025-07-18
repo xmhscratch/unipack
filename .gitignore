@@ -98,4 +98,4 @@ target
 # Added by cargo
 /target
 pkg/fbgen-rust/src/schema/**/*.rs
-pkg/fbgen-go/
+pkg/fbgen-go/schema/**/*

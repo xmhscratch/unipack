@@ -29,19 +29,22 @@ wasm_viewer: clean_docker clean_build
 	mkdir -pv $(DIST_DIR)/viewer/
 	docker $(DBUILD_CMD) $(DBUILD_ARGS) --file=./viewer.Dockerfile --target=export-viewer --output type=local,dest=$(DIST_DIR)/viewer/ $(DOCK_ROOT_CTX)
 
-build_lorem:
+gobuild_lorem:
 	if [[ ! -d $(DIST_DIR)/lorem ]]; then \
 		go build -ldflags="-s -w" -mod=vendor -o $(DIST_DIR)/lorem/lorem.bin $(TESTAPP_DIR)/lorem/main.go; \
 		cp -vr $(FIXTURE_DIR)/lorem $(DIST_DIR)/lorem/fixture; \
 	fi;
 
-pack_lorem: build_lorem
+gopack_lorem: gobuild_lorem
 	if [[ ! -f $(DIST_DIR)/lorem.tar.gz ]]; then \
 		tar -C $(DIST_DIR)/lorem/ -c fixture lorem.bin | gzip -9n > $(DIST_DIR)/lorem.tar.gz; \
 	fi;
 
-gorun_lorem: pack_lorem
+gorun_lorem: gopack_lorem
 	go run $(CMD_DIR)/main.go run --main-file=lorem.bin -- $(DIST_DIR)/lorem.tar.gz
+
+goclean_lorem:
+	go run $(CMD_DIR)/main.go clean -- $(DIST_DIR)/lorem.tar.gz
 
 go.mod:
 	go mod tidy;

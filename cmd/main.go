@@ -26,13 +26,11 @@ func main() {
 	switch os.Args[1] {
 	case "run":
 		runCmd := flag.NewFlagSet("run", flag.ExitOnError)
-
-		go func() {
-			MountTar(runCmd)
-		}()
-		<-StartServer()
-	case "server":
-		break
+		MountTar(runCmd)
+	case "stat":
+		statCmd := flag.NewFlagSet("stat", flag.ExitOnError)
+		<-StartServer(statCmd)
+	case "clean":
 	default:
 		os.Exit(1)
 	}
@@ -68,7 +66,17 @@ func MountTar(runCmd *flag.FlagSet) os.Signal {
 	}).Serve()
 }
 
-func StartServer() chan os.Signal {
+func StartServer(statCmd *flag.FlagSet) chan os.Signal {
+	// var (
+	// 	mainFile   string
+	// 	mountPoint string
+	// 	entries    uni.StringMapFlag
+	// )
+	// statCmd.StringVar(&mainFile, "main-file", "main", "application main execution binary file")
+	// statCmd.StringVar(&mountPoint, "mount-point", "", "(optional) define default mount point on the host machine")
+	// statCmd.Var(&entries, "entries", "(optional) mounting external files or folders at runtime")
+	// statCmd.Parse(os.Args[2:])
+
 	app := fiber.New()
 
 	app.Use(cors.New())
@@ -76,17 +84,9 @@ func StartServer() chan os.Signal {
 	// socketio.On(socketio.EventConnect, stat.HandleConnect(app))
 	// socketio.On(socketio.EventDisconnect, stat.HandleDisconnect(app))
 	socketio.On(socketio.EventClose, stat.HandleClose(app))
-	// socketio.On(socketio.EventError, stat.HandleError(app))
+	socketio.On(socketio.EventError, stat.HandleError(app))
 	socketio.On(socketio.EventPing, stat.HandlePing(app))
 
-	app.Use("/viewer", stat.NewStorageHandler("/home/web/repos/unipack/dist/viewer", stat.StorageConfig{
-		Compress:      false,
-		ByteRange:     true,
-		Browse:        false,
-		Download:      false,
-		CacheDuration: 10 * time.Second,
-		MaxAge:        3600,
-	}))
 	app.Use("/ws/*", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)
@@ -98,6 +98,14 @@ func StartServer() chan os.Signal {
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
 	})
+	app.Get("/viewer/*", stat.NewStorageHandler("./dist/viewer", stat.StorageConfig{
+		Compress:      false,
+		ByteRange:     true,
+		Browse:        false,
+		Download:      false,
+		CacheDuration: 10 * time.Second,
+		MaxAge:        3600,
+	}))
 
 	app.Get("*", func(c *fiber.Ctx) error {
 		return c.SendString("page not found!")

@@ -15,14 +15,17 @@ func TestMechanic(t *testing.T) {
 	tck := time.NewTicker(5 * time.Millisecond)
 	defer tck.Stop()
 
-loopEnd:
-	for range tck.C {
-	loopJob:
-		go func() {
+	go func() {
+		for range tck.C {
 			if time.Since(idleSince).Milliseconds() >= (10 * time.Second).Milliseconds() {
 				idle <- struct{}{}
 			}
-		}()
+		}
+	}()
+
+loopEnd:
+	for range tck.C {
+	loopJob:
 		select {
 		case <-flush:
 			flush = time.After(1 * time.Second)
